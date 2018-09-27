@@ -62,14 +62,17 @@ Resources:
 
   
   RequestUnicornFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
-      # FunctionName: HelloLambdaFunction
+      FunctionName: RequestUnicorn
+      Runtime: nodejs8.10
+      Role: !GetAtt RequestUnicornExecutionRole.Arn
+      Timeout: 5
+      MemorySize: 128
       Handler: hello.handler
-      Runtime: nodejs6.10
       CodeUri: ./
       Policies: AmazonDynamoDBFullAccess
-       
+ 
             
   GetMoviesFunction:
     Type: AWS::Serverless::Function
@@ -269,3 +272,56 @@ Resources:
                 providerARNs:
                   - arn:aws:cognito-idp:ap-southeast-1:222144040228:userpool/ap-southeast-1_gkSXQE78N
                 type: "cognito_user_pools"
+
+  RidesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Rides
+      AttributeDefinitions:
+        -
+          AttributeName: RideId
+          AttributeType: S
+      KeySchema:
+        -
+          AttributeName: RideId
+          KeyType: HASH
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  RequestUnicornExecutionRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: WildRydesLambda
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement: 
+          - 
+            Effect: Allow
+            Principal: 
+              Service: 
+                - lambda.amazonaws.com
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/wildrydes/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies: 
+        - 
+          PolicyName: PutRidePolicy
+          PolicyDocument: 
+            Version: 2012-10-17
+            Statement: 
+              - 
+                Effect: Allow
+                Action: 
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                Resource: !GetAtt RidesTable.Arn
+
+  WildRydesApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: Prod deployment for wild Rydes API
+      RestApiId: !Ref WildRydesApi
+      StageName: prod         
