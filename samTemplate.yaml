@@ -273,22 +273,6 @@ Resources:
                   - arn:aws:cognito-idp:ap-southeast-1:222144040228:userpool/ap-southeast-1_gkSXQE78N
                 type: "cognito_user_pools"
 
-  RidesTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: Rides
-      AttributeDefinitions:
-        -
-          AttributeName: RideId
-          AttributeType: S
-      KeySchema:
-        -
-          AttributeName: RideId
-          KeyType: HASH
-      ProvisionedThroughput: 
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-
   RequestUnicornExecutionRole:
     Type: AWS::IAM::Role
     Properties: 
@@ -306,18 +290,7 @@ Resources:
       Path: "/wildrydes/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies: 
-        - 
-          PolicyName: PutRidePolicy
-          PolicyDocument: 
-            Version: 2012-10-17
-            Statement: 
-              - 
-                Effect: Allow
-                Action: 
-                  - dynamodb:PutItem
-                  - dynamodb:Scan
-                Resource: !GetAtt RidesTable.Arn
+
 
   WildRydesApiDeployment:
     Type: AWS::ApiGateway::Deployment
