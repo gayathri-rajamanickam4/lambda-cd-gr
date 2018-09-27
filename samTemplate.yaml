@@ -59,6 +59,17 @@ Resources:
           Properties:
             Path: /hello
             Method: DELETE
+
+  
+  RequestUnicornFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # FunctionName: HelloLambdaFunction
+      Handler: hello.handler
+      Runtime: nodejs6.10
+      CodeUri: ./
+      Policies: AmazonDynamoDBFullAccess
+       
             
   GetMoviesFunction:
     Type: AWS::Serverless::Function
@@ -179,3 +190,82 @@ Resources:
           Properties:
             Path: /auth-test
             Method: GET
+
+  WildRydesApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: WildRydes
+        Body:
+          swagger: 2.0
+          info:
+            version: 1.0.0
+            title: WildRydes
+          paths:
+            /ride:
+              post:
+                description: Requests a new ride
+                consumes:
+                  - application/json
+                produces:
+                  - application/json
+                security:
+                  - CognitoAuthorizer: []
+                responses:
+                  "200":
+                    description: "200 response"
+                    headers:
+                      Access-Control-Allow-Origin:
+                        type: "string"
+                x-amazon-apigateway-integration:
+                  responses:
+                    default:
+                      statusCode: 200
+                      responseParameters:
+                        method.response.header.Access-Control-Allow-Origin: "'*'"
+                  uri: 
+                    Fn::Join:
+                      - ""
+                      - - "arn:aws:apigateway:"
+                        - !Ref AWS::Region
+                        - ":lambda:path/2015-03-31/functions/"
+                        - !GetAtt RequestUnicornFunction.Arn
+                        - "/invocations"
+                  passthroughBehavior: "when_no_match"
+                  httpMethod: "POST"
+                  contentHandling: "CONVERT_TO_TEXT"
+                  type: "aws_proxy"
+              options:
+                responses:
+                  "200":
+                    description: "200 response"
+                    schema:
+                      $ref: "#/definitions/Empty"
+                    headers:
+                      Access-Control-Allow-Origin:
+                        type: "string"
+                      Access-Control-Allow-Methods:
+                        type: "string"
+                      Access-Control-Allow-Headers:
+                        type: "string"
+                x-amazon-apigateway-integration:
+                  responses:
+                    default:
+                      statusCode: "200"
+                      responseParameters:
+                        method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                        method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                        method.response.header.Access-Control-Allow-Origin: "'*'"
+                  requestTemplates:
+                    application/json: "{\"statusCode\": 200}"
+                  passthroughBehavior: "when_no_match"
+                  type: "mock"
+          securityDefinitions:
+            CognitoAuthorizer:
+              type: "apiKey"
+              name: Authorization
+              in: header
+              x-amazon-apigateway-authtype: cognito_user_pools
+              x-amazon-apigateway-authorizer:
+                providerARNs:
+                  - arn:aws:cognito-idp:ap-southeast-1:222144040228:userpool/ap-southeast-1_gkSXQE78N
+                type: "cognito_user_pools"
